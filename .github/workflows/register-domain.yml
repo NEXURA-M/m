@@ -1,0 +1,47 @@
+name: Register Custom Subdomain
+
+on:
+  workflow_dispatch: # Aap isay manually trigger kar sakte hain
+  push:
+    branches: [ main ]
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Register Subdomain on Sitey
+        run: |
+          # Yahan apna pasandeeda subdomain name daalein
+          SUBDOMAIN_NAME="mtaqi-studio"
+          
+          # Sitey API ko call karein (CNAME record ke liye)
+          # 'domain' field mein 'sitey.my' ya 'sitey.one' use karein
+          curl -X POST https://sitey.my/mcp \
+            -H "Content-Type: application/json" \
+            -d '{
+              "jsonrpc": "2.0",
+              "method": "create_subdomain",
+              "params": {
+                "type": "CNAME",
+                "value": "${{ github.repository_owner }}.github.io",
+                "domain": "sitey.my",
+                "subdomain": "'"$SUBDOMAIN_NAME"'"
+              },
+              "id": 1
+            }'
+
+      - name: Set Custom Domain for GitHub Pages (Optional)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Yeh step GitHub Pages ki settings mein custom domain ko set karega
+            const subdomain = 'mtaqi-studio.sitey.my';
+            await github.rest.repos.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              cname: subdomain
+            });
