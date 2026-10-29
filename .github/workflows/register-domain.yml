@@ -1,11 +1,10 @@
 name: Register Sitey Subdomain & Set Custom Domain
 
 on:
-  workflow_dispatch: # Aap isay manually "Run workflow" button se chala sakte hain
+  workflow_dispatch: 
   push:
     branches: [ main ]
 
-# Permissions ko theek kiya gaya hai taake repo mein changes push ho sakein
 permissions:
   contents: write
   pages: write
@@ -23,6 +22,7 @@ jobs:
           echo "Registering mtaqi-studio.sitey.my on Sitey..."
           curl -X POST https://sitey.my/mcp \
             -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
             -d '{
               "jsonrpc": "2.0",
               "method": "create_subdomain",
@@ -38,7 +38,6 @@ jobs:
 
       - name: Set Custom Domain using CNAME file
         run: |
-          # CNAME file create kar rahe hain jise GitHub Pages khud read karta hai
           echo "mtaqi-studio.sitey.my" > CNAME
           
       - name: Commit and Push CNAME File
@@ -46,6 +45,5 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add CNAME
-          # Agar file pehle se same hai toh error na aaye, isliye '|| echo' lagaya hai
           git commit -m "Auto-set Custom Domain to mtaqi-studio.sitey.my" || echo "No changes to commit"
           git push
