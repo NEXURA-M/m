@@ -1,12 +1,18 @@
-name: Register Custom Subdomain
+name: Register Sitey Subdomain & Set Custom Domain
 
 on:
-  workflow_dispatch: # Aap isay manually trigger kar sakte hain
+  workflow_dispatch: # Aap isay manually "Run workflow" button se chala sakte hain
   push:
     branches: [ main ]
 
+# Permissions ko theek kiya gaya hai taake repo mein changes push ho sakein
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
-  register:
+  register-and-setup:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -14,11 +20,7 @@ jobs:
 
       - name: Register Subdomain on Sitey
         run: |
-          # Yahan apna pasandeeda subdomain name daalein
-          SUBDOMAIN_NAME="mtaqi-studio"
-          
-          # Sitey API ko call karein (CNAME record ke liye)
-          # 'domain' field mein 'sitey.my' ya 'sitey.one' use karein
+          echo "Registering mtaqi-studio.sitey.my on Sitey..."
           curl -X POST https://sitey.my/mcp \
             -H "Content-Type: application/json" \
             -d '{
@@ -28,20 +30,22 @@ jobs:
                 "type": "CNAME",
                 "value": "${{ github.repository_owner }}.github.io",
                 "domain": "sitey.my",
-                "subdomain": "'"$SUBDOMAIN_NAME"'"
+                "subdomain": "mtaqi-studio"
               },
               "id": 1
             }'
+          echo "Sitey registration request sent!"
 
-      - name: Set Custom Domain for GitHub Pages (Optional)
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            // Yeh step GitHub Pages ki settings mein custom domain ko set karega
-            const subdomain = 'mtaqi-studio.sitey.my';
-            await github.rest.repos.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              cname: subdomain
-            });
+      - name: Set Custom Domain using CNAME file
+        run: |
+          # CNAME file create kar rahe hain jise GitHub Pages khud read karta hai
+          echo "mtaqi-studio.sitey.my" > CNAME
+          
+      - name: Commit and Push CNAME File
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add CNAME
+          # Agar file pehle se same hai toh error na aaye, isliye '|| echo' lagaya hai
+          git commit -m "Auto-set Custom Domain to mtaqi-studio.sitey.my" || echo "No changes to commit"
+          git push
